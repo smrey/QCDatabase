@@ -19,7 +19,7 @@ print "Success so far"
 cursor = db.cursor()
 
 #Drop tables prior to creation in here, to avoid conflicts
-tablist = ["Pipeline","Rds","Chemistry","MiSeqRun"]
+tablist = ["InstrumentType","Instrument","Pipeline","Rds","Chemistry","MiSeqRun","LinkMiSeqRunRds"]
 
 for table in tablist[::-1]: #Have to drop tables in the reverse order from where they were created
     #time.sleep(0.5)
@@ -29,14 +29,21 @@ for table in tablist[::-1]: #Have to drop tables in the reverse order from where
 
 #Create tables
 #Where a relationship exists, tables must be created in the order parent and then child
-cursor.execute(""" CREATE TABLE Rds (
-        ReadID BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-        ReadNumber VARCHAR(15) NOT NULL,
-        Indexed TINYINT(1),
-        NumberOfCycles SMALLINT UNSIGNED NOT NULL,
-        Primary key(ReadID)
+cursor.execute(""" CREATE TABLE InstrumentType (
+        InstrumentTypeID TINYINT UNSIGNED AUTO_INCREMENT NOT NULL,
+        InstrumentType VARCHAR(10) NOT NULL,
+        Primary key(InstrumentTypeID)
         )""")
-print "Reads table created"
+print "InstrumentType table created"
+
+cursor.execute(""" CREATE TABLE Instrument (
+        InstrumentID TINYINT UNSIGNED AUTO_INCREMENT NOT NULL,
+        IlluminaInstrumentIdentifier VARCHAR(15) NOT NULL,
+        InstrumentType TINYINT UNSIGNED NOT NULL,
+        Primary key(InstrumentID),
+        Foreign key(InstrumentType) References InstrumentType(InstrumentTypeID)
+        )""")
+print "Instrument table created"
 
 cursor.execute(""" CREATE TABLE Pipeline (
         PipelineID SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
@@ -45,6 +52,15 @@ cursor.execute(""" CREATE TABLE Pipeline (
         Primary key(PipelineID)
         )""")
 print "Pipeline table created"
+
+cursor.execute(""" CREATE TABLE Rds (
+        ReadID BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
+        ReadNumber VARCHAR(15) NOT NULL,
+        Indexed TINYINT(1),
+        NumberOfCycles SMALLINT UNSIGNED NOT NULL,
+        Primary key(ReadID)
+        )""")
+print "Reads table created"
 
 cursor.execute(""" CREATE TABLE Chemistry (
         ChemistryID SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
@@ -62,7 +78,20 @@ cursor.execute(""" CREATE TABLE MiSeqRun (
         KitVersionNumber TINYINT(2) NOT NULL,
         ExperimentName VARCHAR(15),
         Operator VARCHAR(5),
+        ChemistryID SMALLINT UNSIGNED NOT NULL,
         PipelineID SMALLINT(5) UNSIGNED NOT NULL,
-        Primary key(MiSeqRunID)
+        Primary key(MiSeqRunID),
+        Foreign key(ChemistryID) References Chemistry(ChemistryID),
+        Foreign key(PipelineID) References Pipeline(PipelineID)
         )""")
 print "MiSeqRun table created"
+
+cursor.execute(""" CREATE TABLE LinkMiSeqRunRds (
+        LinkMiSeqRunRdsID SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        ReadID BIGINT UNSIGNED NOT NULL,
+        Primary key(LinkMiSeqRunRdsID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID),
+        Foreign key(ReadID) References Rds(ReadID)
+        )""")
+print "LinkMiSeqRunRds table created"
