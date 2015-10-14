@@ -19,7 +19,8 @@ print "Success so far"
 cursor = db.cursor()
 
 #Drop tables prior to creation in here, to avoid conflicts
-tablist = ["InstrumentType","Instrument","Pipeline","Rds","Chemistry","MiSeqRun","LinkMiSeqRunRds"]
+tablist = ["InstrumentType","Instrument","Pipeline","Rds","Chemistry","FlowCell","PR2Bottle",
+           "ReagentKit","MiSeqRun","LinkMiSeqRunRds"]
 
 for table in tablist[::-1]: #Have to drop tables in the reverse order from where they were created
     #time.sleep(0.5)
@@ -69,6 +70,30 @@ cursor.execute(""" CREATE TABLE Chemistry (
         )""")
 print "Chemistry table created"
 
+cursor.execute(""" CREATE TABLE FlowCell (
+        FlowCellID INT(15) UNSIGNED,
+        FlowCellPartID VARCHAR(25),
+        FlowCellExpiry DATE,
+        Primary key(FlowCellID)
+        )""")
+print "FlowCell table created"
+
+cursor.execute(""" CREATE TABLE PR2Bottle (
+        PR2BottleID INT(15) UNSIGNED,
+        PR2BottlePartID VARCHAR(25),
+        PR2BottleExpiry DATE,
+        Primary key(PR2BottleID)
+        )""")
+print "PR2Bottle table created"
+
+cursor.execute(""" CREATE TABLE ReagentKit (
+        ReagentKitID INT(15) UNSIGNED,
+        ReagentKitPartID VARCHAR(25),
+        ReagentKitExpiry DATE,
+        Primary key(ReagentKitID)
+        )""")
+print "ReagentKit table created"
+
 cursor.execute(""" CREATE TABLE MiSeqRun (
         MiSeqRunID VARCHAR(50) NOT NULL,
         RunStartDate DATE NOT NULL,
@@ -80,9 +105,15 @@ cursor.execute(""" CREATE TABLE MiSeqRun (
         Operator VARCHAR(5),
         ChemistryID SMALLINT UNSIGNED NOT NULL,
         PipelineID SMALLINT(5) UNSIGNED NOT NULL,
+        FlowCellID INT(15) UNSIGNED,
+        PR2BottleID INT(15) UNSIGNED,
+        ReagentKitID INT(15) UNSIGNED,
         Primary key(MiSeqRunID),
         Foreign key(ChemistryID) References Chemistry(ChemistryID),
-        Foreign key(PipelineID) References Pipeline(PipelineID)
+        Foreign key(PipelineID) References Pipeline(PipelineID),
+        Foreign key(FlowCellID) References FlowCell(FlowCellID),
+        Foreign key(PR2BottleID) References PR2Bottle(PR2BottleID),
+        Foreign key(ReagentKitID) References ReagentKit(ReagentKitID)
         )""")
 print "MiSeqRun table created"
 
