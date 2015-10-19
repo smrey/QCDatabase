@@ -20,7 +20,8 @@ cursor = db.cursor()
 
 #Drop tables prior to creation in here, to avoid conflicts
 tablist = ["InstrumentType","Instrument","Pipeline","Rds","Chemistry","FlowCell","PR2Bottle",
-           "ReagentKit","MiSeqRun","LinkMiSeqRunRds"]
+           "ReagentKit","MiSeqRun","LinkMiSeqRunRds","QualityMetrics","ExtractionMetrics",
+           "CorrectedIntMetrics","ErrorMetrics","TileMetrics","IndexMetricsMSR"]
 
 for table in tablist[::-1]: #Have to drop tables in the reverse order from where they were created
     #time.sleep(0.5)
@@ -126,3 +127,149 @@ cursor.execute(""" CREATE TABLE LinkMiSeqRunRds (
         Foreign key(ReadID) References Rds(ReadID)
         )""")
 print "LinkMiSeqRunRds table created"
+
+cursor.execute(""" CREATE TABLE QualityMetrics (
+        LaneID TINYINT UNSIGNED NOT NULL,
+        TileID SMALLINT UNSIGNED NOT NULL,
+        CycleID SMALLINT UNSIGNED NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        Q01 MEDIUMINT UNSIGNED,
+        Q02 MEDIUMINT UNSIGNED,
+        Q03 MEDIUMINT UNSIGNED,
+        Q04 MEDIUMINT UNSIGNED,
+        Q05 MEDIUMINT UNSIGNED,
+        Q06 MEDIUMINT UNSIGNED,
+        Q07 MEDIUMINT UNSIGNED,
+        Q08 MEDIUMINT UNSIGNED,
+        Q09 MEDIUMINT UNSIGNED,
+        Q10 MEDIUMINT UNSIGNED,
+        Q11 MEDIUMINT UNSIGNED,
+        Q12 MEDIUMINT UNSIGNED,
+        Q13 MEDIUMINT UNSIGNED,
+        Q14 MEDIUMINT UNSIGNED,
+        Q15 MEDIUMINT UNSIGNED,
+        Q16 MEDIUMINT UNSIGNED,
+        Q17 MEDIUMINT UNSIGNED,
+        Q18 MEDIUMINT UNSIGNED,
+        Q19 MEDIUMINT UNSIGNED,
+        Q20 MEDIUMINT UNSIGNED,
+        Q21 MEDIUMINT UNSIGNED,
+        Q22 MEDIUMINT UNSIGNED,
+        Q23 MEDIUMINT UNSIGNED,
+        Q24 MEDIUMINT UNSIGNED,
+        Q25 MEDIUMINT UNSIGNED,
+        Q26 MEDIUMINT UNSIGNED,
+        Q27 MEDIUMINT UNSIGNED,
+        Q28 MEDIUMINT UNSIGNED,
+        Q29 MEDIUMINT UNSIGNED,
+        Q30 MEDIUMINT UNSIGNED,
+        Q31 MEDIUMINT UNSIGNED,
+        Q32 MEDIUMINT UNSIGNED,
+        Q33 MEDIUMINT UNSIGNED,
+        Q34 MEDIUMINT UNSIGNED,
+        Q35 MEDIUMINT UNSIGNED,
+        Q36 MEDIUMINT UNSIGNED,
+        Q37 MEDIUMINT UNSIGNED,
+        Q38 MEDIUMINT UNSIGNED,
+        Q39 MEDIUMINT UNSIGNED,
+        Q40 MEDIUMINT UNSIGNED,
+        Q41 MEDIUMINT UNSIGNED,
+        Q42 MEDIUMINT UNSIGNED,
+        Q43 MEDIUMINT UNSIGNED,
+        Q44 MEDIUMINT UNSIGNED,
+        Q45 MEDIUMINT UNSIGNED,
+        Q46 MEDIUMINT UNSIGNED,
+        Q47 MEDIUMINT UNSIGNED,
+        Q48 MEDIUMINT UNSIGNED,
+        Q49 MEDIUMINT UNSIGNED,
+        Q50 MEDIUMINT UNSIGNED,
+        Primary key(LaneID,TileID,CycleID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        )""")
+print "QualityMetrics table created"
+
+cursor.execute(""" CREATE TABLE ExtractionMetrics (
+        LaneID TINYINT UNSIGNED NOT NULL,
+        TileID SMALLINT UNSIGNED NOT NULL,
+        CycleID SMALLINT UNSIGNED NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        FWHM_A DECIMAL(8),
+        FWHM_C DECIMAL(8),
+        FWHM_G DECIMAL(8),
+        FWHM_T DECIMAL(8),
+        Intensity_A SMALLINT(3) UNSIGNED,
+        Intensity_C SMALLINT(3) UNSIGNED,
+        Intensity_G SMALLINT(3) UNSIGNED,
+        Intensity_T SMALLINT(3) UNSIGNED,
+        Date DATE,
+        Time TIME,
+        Primary key(LaneID,TileID,CycleID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        )""")
+print "ExtractionMetrics table created"
+
+cursor.execute(""" CREATE TABLE CorrectedIntMetrics (
+        LaneID TINYINT UNSIGNED NOT NULL,
+        TileID SMALLINT UNSIGNED NOT NULL,
+        CycleID SMALLINT UNSIGNED NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        AverageIntensity SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensity_A SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensity_C SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensity_G SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensity_T SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensityCalledClusters_A SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensityCalledClusters_C SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensityCalledClusters_G SMALLINT(5) UNSIGNED,
+        AverageCorrectedIntensityCalledClusters_T SMALLINT(5) UNSIGNED,
+        NumNoCalls SMALLINT UNSIGNED,
+        NUM_A MEDIUMINT UNSIGNED,
+        NUM_C MEDIUMINT UNSIGNED,
+        NUM_G MEDIUMINT UNSIGNED,
+        NUM_T MEDIUMINT UNSIGNED,
+        Signal2NoiseRatio DECIMAL(8),
+        Primary key(LaneID,TileID,CycleID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        )""")
+print "CorrectedIntensityMetrics table created"
+
+cursor.execute(""" CREATE TABLE ErrorMetrics (
+        LaneID TINYINT UNSIGNED NOT NULL,
+        TileID SMALLINT UNSIGNED NOT NULL,
+        CycleID SMALLINT UNSIGNED NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        ErrorRate DECIMAL(8),
+        NumPerfectRds SMALLINT(8) UNSIGNED,
+        NumSingleError SMALLINT(8) UNSIGNED,
+        NumDoubleError SMALLINT(8) UNSIGNED,
+        NumTripleError SMALLINT(8) UNSIGNED,
+        NumQuadrupleError SMALLINT(8) UNSIGNED,
+        Primary key(LaneID,TileID,CycleID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        )""")
+print "ErrorMetrics table created"
+
+cursor.execute(""" CREATE TABLE TileMetrics (
+        LaneID TINYINT UNSIGNED NOT NULL,
+        TileID SMALLINT UNSIGNED NOT NULL,
+        CodeID SMALLINT UNSIGNED NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        Value DECIMAL(8),
+        Primary key(LaneID,TileID,CodeID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        )""")
+print "TileMetrics table created"
+
+cursor.execute(""" CREATE TABLE IndexMetricsMSR (
+        LaneID TINYINT UNSIGNED NOT NULL,
+        TileID SMALLINT UNSIGNED NOT NULL,
+        ReadNum TINYINT(2) UNSIGNED NOT NULL,
+        MiSeqRunID VARCHAR(50) NOT NULL,
+        IndexName VARCHAR(50),
+        NumControlClusters MEDIUMINT UNSIGNED,
+        SampleName VARCHAR(20),
+        ProjectName VARCHAR(50),
+        Primary key(LaneID,TileID,ReadNum),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        )""")
+print "IndexMetricsMSR table created"
