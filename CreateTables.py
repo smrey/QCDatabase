@@ -19,8 +19,7 @@ print "Success so far"
 cursor = db.cursor()
 
 #Drop tables prior to creation in here, to avoid conflicts
-tablist = ["InstrumentType","Instrument","Pipeline","Rds","Chemistry","FlowCell","PR2Bottle",
-           "ReagentKit","MiSeqRun","LinkMiSeqRunRds","QualityMetrics","ExtractionMetrics",
+tablist = ["Rds","MiSeqRun","LinkMiSeqRunRds","QualityMetrics","ExtractionMetrics",
            "CorrectedIntMetrics","ErrorMetrics","TileMetrics","IndexMetricsMSR"]
 
 for table in tablist[::-1]: #Have to drop tables in the reverse order from where they were created
@@ -31,90 +30,40 @@ for table in tablist[::-1]: #Have to drop tables in the reverse order from where
 
 #Create tables
 #Where a relationship exists, tables must be created in the order parent and then child
-cursor.execute(""" CREATE TABLE InstrumentType (
-        InstrumentTypeID TINYINT UNSIGNED AUTO_INCREMENT NOT NULL,
-        InstrumentType VARCHAR(10) NOT NULL,
-        Primary key(InstrumentTypeID)
-        )""")
-print "InstrumentType table created"
-
-cursor.execute(""" CREATE TABLE Instrument (
-        InstrumentID TINYINT UNSIGNED AUTO_INCREMENT NOT NULL,
-        IlluminaInstrumentIdentifier VARCHAR(15) NOT NULL,
-        InstrumentType TINYINT UNSIGNED NOT NULL,
-        Primary key(InstrumentID),
-        Foreign key(InstrumentType) References InstrumentType(InstrumentTypeID)
-        )""")
-print "Instrument table created"
-
-cursor.execute(""" CREATE TABLE Pipeline (
-        PipelineID SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
-        PipelineName VARCHAR(30),
-        PipelineVersion TINYINT(2),
-        Primary key(PipelineID)
-        )""")
-print "Pipeline table created"
-
 cursor.execute(""" CREATE TABLE Rds (
         ReadID BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
         ReadNumber VARCHAR(15) NOT NULL,
         Indexed TINYINT(1),
         NumberOfCycles SMALLINT UNSIGNED NOT NULL,
-        Primary key(ReadID)
+        Primary key(ReadID),
+        CONSTRAINT stop_ins UNIQUE (ReadNumber,Indexed,NumberOfCycles)
         )""")
 print "Reads table created"
 
-cursor.execute(""" CREATE TABLE Chemistry (
-        ChemistryID SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
-        ChemistryType VARCHAR(15),
-        Primary key(ChemistryID)
-        )""")
-print "Chemistry table created"
-
-cursor.execute(""" CREATE TABLE FlowCell (
-        FlowCellID INT(15) UNSIGNED,
-        FlowCellPartID VARCHAR(25),
-        FlowCellExpiry DATE,
-        Primary key(FlowCellID)
-        )""")
-print "FlowCell table created"
-
-cursor.execute(""" CREATE TABLE PR2Bottle (
-        PR2BottleID INT(15) UNSIGNED,
-        PR2BottlePartID VARCHAR(25),
-        PR2BottleExpiry DATE,
-        Primary key(PR2BottleID)
-        )""")
-print "PR2Bottle table created"
-
-cursor.execute(""" CREATE TABLE ReagentKit (
-        ReagentKitID INT(15) UNSIGNED,
-        ReagentKitPartID VARCHAR(25),
-        ReagentKitExpiry DATE,
-        Primary key(ReagentKitID)
-        )""")
-print "ReagentKit table created"
-
 cursor.execute(""" CREATE TABLE MiSeqRun (
         MiSeqRunID VARCHAR(50) NOT NULL,
-        RunStartDate DATE NOT NULL,
-        FieldProgrammableGateArrayVersion VARCHAR(10) NOT NULL,
-        MiSeqControlSoftwareVersion VARCHAR(10) NOT NULL,
-        RealTimeAnalysisSoftwareVersion VARCHAR(10) NOT NULL,
-        KitVersionNumber TINYINT(2) NOT NULL,
-        ExperimentName VARCHAR(15),
-        Operator VARCHAR(5),
-        ChemistryID SMALLINT UNSIGNED NOT NULL,
-        PipelineID SMALLINT(5) UNSIGNED NOT NULL,
-        FlowCellID INT(15) UNSIGNED,
-        PR2BottleID INT(15) UNSIGNED,
-        ReagentKitID INT(15) UNSIGNED,
-        Primary key(MiSeqRunID),
-        Foreign key(ChemistryID) References Chemistry(ChemistryID),
-        Foreign key(PipelineID) References Pipeline(PipelineID),
-        Foreign key(FlowCellID) References FlowCell(FlowCellID),
-        Foreign key(PR2BottleID) References PR2Bottle(PR2BottleID),
-        Foreign key(ReagentKitID) References ReagentKit(ReagentKitID)
+        RunStartDate DATE,
+        RunNumber MEDIUMINT UNSIGNED,
+        Instrument VARCHAR(15) NOT NULL,
+        FPGAVersion VARCHAR(10),
+        MCSVersion VARCHAR(10),
+        RTAVersion VARCHAR(10),
+        KitVersionNumber TINYINT(2),
+        OnboardAnalysis VARCHAR(200),
+        ExperimentName VARCHAR(30),
+        Operator VARCHAR(30),
+        Chemistry VARCHAR(15),
+        Pipeline VARCHAR(50),
+        FlowCell VARCHAR(25),
+        FlowCellPartID INT(20) UNSIGNED,
+        FlowCellExpiry DATE,
+        PR2Bottle VARCHAR(25),
+        PR2BottlePartID INT(15) UNSIGNED,
+        PR2BottleExpiry DATE,
+        ReagentKit VARCHAR(25),
+        ReagentKitPartID INT(15) UNSIGNED,
+        ReagentKitExpiry DATE,
+        Primary key(MiSeqRunID)
         )""")
 print "MiSeqRun table created"
 
@@ -123,8 +72,9 @@ cursor.execute(""" CREATE TABLE LinkMiSeqRunRds (
         MiSeqRunID VARCHAR(50) NOT NULL,
         ReadID BIGINT UNSIGNED NOT NULL,
         Primary key(LinkMiSeqRunRdsID),
-        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID),
-        Foreign key(ReadID) References Rds(ReadID)
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID) ON UPDATE CASCADE,
+        Foreign key(ReadID) References Rds(ReadID) ON UPDATE CASCADE,
+        CONSTRAINT stop_ins UNIQUE (MiSeqRunID,ReadID)
         )""")
 print "LinkMiSeqRunRds table created"
 
@@ -183,8 +133,8 @@ cursor.execute(""" CREATE TABLE QualityMetrics (
         Q48 MEDIUMINT UNSIGNED,
         Q49 MEDIUMINT UNSIGNED,
         Q50 MEDIUMINT UNSIGNED,
-        Primary key(LaneID,TileID,CycleID),
-        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        Primary key(LaneID,TileID,CycleID,MiSeqRunID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID) ON DELETE RESTRICT ON UPDATE CASCADE
         )""")
 print "QualityMetrics table created"
 
@@ -193,18 +143,18 @@ cursor.execute(""" CREATE TABLE ExtractionMetrics (
         TileID SMALLINT UNSIGNED NOT NULL,
         CycleID SMALLINT UNSIGNED NOT NULL,
         MiSeqRunID VARCHAR(50) NOT NULL,
-        FWHM_A DECIMAL(8),
-        FWHM_C DECIMAL(8),
-        FWHM_G DECIMAL(8),
-        FWHM_T DECIMAL(8),
+        FWHM_A DECIMAL(40,20),
+        FWHM_C DECIMAL(40,20),
+        FWHM_G DECIMAL(40,20),
+        FWHM_T DECIMAL(40,20),
         Intensity_A SMALLINT(3) UNSIGNED,
         Intensity_C SMALLINT(3) UNSIGNED,
         Intensity_G SMALLINT(3) UNSIGNED,
         Intensity_T SMALLINT(3) UNSIGNED,
         Date DATE,
         Time TIME,
-        Primary key(LaneID,TileID,CycleID),
-        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        Primary key(LaneID,TileID,CycleID,MiSeqRunID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID) ON DELETE RESTRICT ON UPDATE CASCADE
         )""")
 print "ExtractionMetrics table created"
 
@@ -222,14 +172,14 @@ cursor.execute(""" CREATE TABLE CorrectedIntMetrics (
         AverageCorrectedIntensityCalledClusters_C SMALLINT(5) UNSIGNED,
         AverageCorrectedIntensityCalledClusters_G SMALLINT(5) UNSIGNED,
         AverageCorrectedIntensityCalledClusters_T SMALLINT(5) UNSIGNED,
-        NumNoCalls SMALLINT UNSIGNED,
+        NumNoCalls MEDIUMINT UNSIGNED,
         NUM_A MEDIUMINT UNSIGNED,
         NUM_C MEDIUMINT UNSIGNED,
         NUM_G MEDIUMINT UNSIGNED,
         NUM_T MEDIUMINT UNSIGNED,
-        Signal2NoiseRatio DECIMAL(8),
-        Primary key(LaneID,TileID,CycleID),
-        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        Signal2NoiseRatio DECIMAL(40,20),
+        Primary key(LaneID,TileID,CycleID,MiSeqRunID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID) ON DELETE RESTRICT ON UPDATE CASCADE
         )""")
 print "CorrectedIntensityMetrics table created"
 
@@ -238,14 +188,14 @@ cursor.execute(""" CREATE TABLE ErrorMetrics (
         TileID SMALLINT UNSIGNED NOT NULL,
         CycleID SMALLINT UNSIGNED NOT NULL,
         MiSeqRunID VARCHAR(50) NOT NULL,
-        ErrorRate DECIMAL(8),
-        NumPerfectRds SMALLINT(8) UNSIGNED,
-        NumSingleError SMALLINT(8) UNSIGNED,
-        NumDoubleError SMALLINT(8) UNSIGNED,
-        NumTripleError SMALLINT(8) UNSIGNED,
-        NumQuadrupleError SMALLINT(8) UNSIGNED,
-        Primary key(LaneID,TileID,CycleID),
-        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        ErrorRate DECIMAL(40,20),
+        NumPerfectRds MEDIUMINT(8) UNSIGNED,
+        NumSingleError MEDIUMINT(8) UNSIGNED,
+        NumDoubleError MEDIUMINT(8) UNSIGNED,
+        NumTripleError MEDIUMINT(8) UNSIGNED,
+        NumQuadrupleError MEDIUMINT(8) UNSIGNED,
+        Primary key(LaneID,TileID,CycleID,MiSeqRunID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID) ON DELETE RESTRICT ON UPDATE CASCADE
         )""")
 print "ErrorMetrics table created"
 
@@ -254,12 +204,13 @@ cursor.execute(""" CREATE TABLE TileMetrics (
         TileID SMALLINT UNSIGNED NOT NULL,
         CodeID SMALLINT UNSIGNED NOT NULL,
         MiSeqRunID VARCHAR(50) NOT NULL,
-        Value DECIMAL(8),
-        Primary key(LaneID,TileID,CodeID),
+        Value DECIMAL(60,30),
+        Primary key(LaneID,TileID,CodeID,MiSeqRunID),
         Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
         )""")
 print "TileMetrics table created"
 
+#Primary key needs fixing as it won't be unique across runs- probably an autonum is the best solution??
 cursor.execute(""" CREATE TABLE IndexMetricsMSR (
         LaneID TINYINT UNSIGNED NOT NULL,
         TileID SMALLINT UNSIGNED NOT NULL,
@@ -269,7 +220,8 @@ cursor.execute(""" CREATE TABLE IndexMetricsMSR (
         NumControlClusters MEDIUMINT UNSIGNED,
         SampleName VARCHAR(20),
         ProjectName VARCHAR(50),
-        Primary key(LaneID,TileID,ReadNum),
-        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID)
+        Primary key(LaneID,TileID,ReadNum,IndexName,MiSeqRunID),
+        Foreign key(MiSeqRunID) References MiSeqRun(MiSeqRunID) ON DELETE RESTRICT ON UPDATE CASCADE
         )""")
 print "IndexMetricsMSR table created"
+print "Table creation complete"
